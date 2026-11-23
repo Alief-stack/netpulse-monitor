@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NetPulse Monitor — Dashboard Infrastruktur & Jaringan</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Letakkan konfigurasi ini TEPAT SEBELUM script cdn.tailwindcss.com -->
+    <script>
+    window.tailwind = {
+        config: {
+        darkMode: 'class',
+        theme: {
+            extend: {
+            fontFamily: {
+                sans: ['Inter', 'sans-serif'],
+                mono: ['JetBrains Mono', 'monospace'],
+            }
+            }
+        }
+        }
+    };
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- File CSS Terpisah -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="antialiased selection:bg-indigo-100 selection:text-indigo-700">
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- SIDEBAR NAVIGASI -->
+    <aside id="sidebar" class="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between transition-all duration-300 z-30">
+      <div>
+        <!-- Brand Logo -->
+        <div class="h-16 flex items-center gap-3 px-6 border-b border-slate-200 dark:border-slate-800">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <i data-lucide="activity" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-base tracking-tight text-slate-800 dark:text-slate-100">NetPulse</h1>
+            <p class="text-[11px] text-slate-400 font-medium">NOC Infrastructure</p>
+          </div>
+        </div>
+
+        <!-- Menu Links -->
+        <nav class="p-4 space-y-1.5">
+          <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Pemantauan</p>
+          <button onclick="switchTab('overview')" id="nav-overview" class="nav-item active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Ringkasan Utama</span>
+          </button>
+          <button onclick="switchTab('devices')" id="nav-devices" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors">
+            <i data-lucide="server" class="w-4 h-4"></i>
+            <span>Perangkat & Node</span>
+            <span class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">8</span>
+          </button>
+          <button onclick="switchTab('tickets')" id="nav-tickets" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors">
+            <i data-lucide="wrench" class="w-4 h-4"></i>
+            <span>Log & Tiket Gangguan</span>
+            <span id="badge-ticket-count" class="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold">3</span>
+          </button>
+
+          <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Utilitas NOC</p>
+          <button onclick="switchTab('topology')" id="nav-topology" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors">
+            <i data-lucide="network" class="w-4 h-4"></i>
+            <span>Topologi & Tool IP</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Status Sistem Bawah Sidebar -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800">
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">Polling Agent</span>
+            <span class="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Aktif
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">Interval pembaruan: 4 detik</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- KONTEN UTAMA -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- TOPBAR -->
+      <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between z-20">
+        <div class="flex items-center gap-4">
+          <h2 id="page-title" class="text-lg font-semibold text-slate-800 dark:text-slate-100">Ringkasan Utama Jaringan</h2>
+          <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Semua Core Link Stabil
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="hidden md:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+            <span id="live-clock">--:--:-- WIB</span>
+          </div>
+
+          <!-- Tombol Buat Tiket Cepat -->
+          <button onclick="openTicketModal()" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Lapor Gangguan</span>
+          </button>
+
+          <!-- Tombol Ganti Tema Soft Light / Soft Dark -->
+          <button onclick="toggleTheme()" title="Ubah Tema Tampilan" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- AREA SCROLL KONTEN -->
+      <main class="flex-1 overflow-y-auto p-6 space-y-6">
+
+        <!-- BAGIAN 1: KARTU KPI METRIK -->
+        <section id="section-kpi" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- KPI 1 -->
+          <div class="card-surface p-5 rounded-2xl">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Uptime Jaringan</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <h3 class="text-2xl font-bold text-slate-800 dark:text-slate-100">99.94%</h3>
+              <span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">+0.02%</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">30 hari terakhir tanpa downtime major</p>
+          </div>
+
+          <!-- KPI 2 -->
+          <div class="card-surface p-5 rounded-2xl">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Rata-Rata Latensi</span>
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <i data-lucide="gauge" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <h3 id="kpi-latency" class="text-2xl font-bold text-slate-800 dark:text-slate-100">14 ms</h3>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Jitter 1.8 ms</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Gateway Utama ke IXP Jakarta</p>
+          </div>
+
+          <!-- KPI 3 -->
+          <div class="card-surface p-5 rounded-2xl">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Perangkat Aktif</span>
+              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <h3 id="kpi-devices" class="text-2xl font-bold text-slate-800 dark:text-slate-100">6 / 8</h3>
+              <span class="text-xs font-medium text-amber-600 dark:text-amber-400">1 Warning, 1 Offline</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Router, Switch, Server & Access Point</p>
+          </div>
+
+          <!-- KPI 4 -->
+          <div class="card-surface p-5 rounded-2xl">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Trafik Bandwidth</span>
+              <div class="w-8 h-8 rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center">
+                <i data-lucide="arrow-up-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <h3 id="kpi-bandwidth" class="text-2xl font-bold text-slate-800 dark:text-slate-100">642 Mbps</h3>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">/ 1 Gbps</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Download 480 Mbps • Upload 162 Mbps</p>
+          </div>
+        </section>
+
+        <!-- BAGIAN 2: GRAFIK TRAFIK & LATENSI REAL-TIME -->
+        <section id="section-chart" class="card-surface p-6 rounded-2xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div>
+              <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Trafik Bandwidth & Latensi Real-Time</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Pemantauan throughput antarmuka WAN Utama (eth0 - Fiber Optic)</p>
+            </div>
+            <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start">
+              <button onclick="updateChartRange('1h', this)" class="range-btn active px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">1 Jam</button>
+              <button onclick="updateChartRange('24h', this)" class="range-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 transition-colors">24 Jam</button>
+              <button onclick="updateChartRange('7d', this)" class="range-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 transition-colors">7 Hari</button>
+            </div>
+          </div>
+          <div class="h-72 w-full">
+            <canvas id="trafficChart"></canvas>
+          </div>
+        </section>
+
+        <!-- BAGIAN 3: TABEL MONITORING PERANGKAT -->
+        <section id="section-devices" class="card-surface rounded-2xl overflow-hidden">
+          <div class="p-6 border-b border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Daftar Perangkat & Node Jaringan</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Klik tombol "Tes Ping" untuk menjalankan diagnostik paket secara langsung</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Input Pencarian -->
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="device-search" onkeyup="filterDevices()" placeholder="Cari hostname, IP, lokasi..." class="pl-9 pr-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 w-56" />
+              </div>
+
+              <!-- Filter Status -->
+              <select id="device-status-filter" onchange="filterDevices()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 focus:outline-none">
+                <option value="all">Semua Status</option>
+                <option value="online">Online</option>
+                <option value="warning">Warning</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-50/60 dark:bg-slate-800/40">
+                  <th class="py-3.5 px-6">Perangkat / Hostname</th>
+                  <th class="py-3.5 px-4">Alamat IP</th>
+                  <th class="py-3.5 px-4">Lokasi Rak / Area</th>
+                  <th class="py-3.5 px-4">Status</th>
+                  <th class="py-3.5 px-4">Latensi</th>
+                  <th class="py-3.5 px-4">Beban CPU</th>
+                  <th class="py-3.5 px-6 text-right">Diagnostik</th>
+                </tr>
+              </thead>
+              <tbody id="device-table-body" class="divide-y divide-slate-200/60 dark:divide-slate-800 text-xs">
+                <!-- Diisi otomatis via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- BAGIAN 4: LOG GANGGUAN & TIKET TEKNISI -->
+        <section id="section-tickets" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Log Gangguan & Tiket Lapangan</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Kelola penanganan insiden teknis dan perbarui status perbaikan</p>
+            </div>
+            <button onclick="openTicketModal()" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Tambah Tiket Baru
+            </button>
+          </div>
+
+          <div id="ticket-list" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Diisi otomatis via JavaScript -->
+          </div>
+        </section>
+
+        <!-- BAGIAN 5: TOPOLOGI VISUAL & TOOL DIAGNOSTIK IP -->
+        <section id="section-topology" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Topologi Hierarki Jaringan -->
+          <div class="lg:col-span-2 card-surface p-6 rounded-2xl">
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-1">Topologi Segmen Jaringan Inti</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Alur koneksi fisik dari ISP Gateway menuju distribusi lantai</p>
+
+            <div class="flex flex-col items-center space-y-4 py-2">
+              <!-- Level 1: ISP -->
+              <div class="px-5 py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex items-center gap-3">
+                <i data-lucide="globe" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+                <div>
+                  <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">ISP Primary Fiber (AS138089)</p>
+                  <p class="text-[11px] font-mono text-slate-500">103.145.22.1 • 1 Gbps Dedicated</p>
+                </div>
+              </div>
+
+              <div class="h-6 w-0.5 bg-slate-300 dark:bg-slate-700"></div>
+
+              <!-- Level 2: Core Router -->
+              <div class="px-5 py-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 flex items-center gap-3">
+                <i data-lucide="router" class="w-5 h-5 text-indigo-600 dark:text-indigo-400"></i>
+                <div>
+                  <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">RTR-CORE-01 (MikroTik CCR2004)</p>
+                  <p class="text-[11px] font-mono text-slate-500">192.168.1.1 • BGP & Firewall Utama</p>
+                </div>
+              </div>
+
+              <div class="h-6 w-0.5 bg-slate-300 dark:bg-slate-700"></div>
+
+              <!-- Level 3: Distribusi -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-2 border-t border-dashed border-slate-300 dark:border-slate-700">
+                <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/50">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">SW-DIST-LT1</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <p class="text-[11px] font-mono text-slate-400">192.168.10.2</p>
+                  <p class="text-[11px] text-slate-500 mt-1">24 Port PoE • Lantai 1</p>
+                </div>
+
+                <div class="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">SW-DIST-LT2</span>
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  </div>
+                  <p class="text-[11px] font-mono text-slate-400">192.168.20.2</p>
+                  <p class="text-[11px] text-amber-600 dark:text-amber-400 mt-1">Trafik Tinggi (84%)</p>
+                </div>
+
+                <div class="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/5">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">AP-GUDANG-02</span>
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                  </div>
+                  <p class="text-[11px] font-mono text-slate-400">192.168.30.14</p>
+                  <p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">Request Timed Out</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kalkulator Subnet CIDR Cepat -->
+          <div class="card-surface p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-1">Kalkulator Subnet IPv4</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Hitung cepat kapasitas host & netmask untuk alokasi VLAN</p>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[11px] font-medium text-slate-500 mb-1">Alamat IP & Prefix CIDR</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="subnet-ip" value="192.168.10.0" class="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100" />
+                    <select id="subnet-cidr" onchange="calculateSubnet()" class="px-3 py-2 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+                      <option value="24" selected>/24</option>
+                      <option value="25">/25</option>
+                      <option value="26">/26</option>
+                      <option value="27">/27</option>
+                      <option value="28">/28</option>
+                      <option value="29">/29</option>
+                      <option value="30">/30</option>
+                    </select>
+                  </div>
+                </div>
+                <button onclick="calculateSubnet()" class="w-full py-2 rounded-xl text-xs font-medium bg-slate-800 dark:bg-indigo-600 text-white hover:opacity-90 transition-opacity">
+                  Hitung Subnet
+                </button>
+              </div>
+            </div>
+
+            <div id="subnet-result" class="mt-5 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700 space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span class="text-slate-500">Subnet Mask:</span>
+                <span id="res-mask" class="font-mono font-medium text-slate-800 dark:text-slate-200">255.255.255.0</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Host Tersedia:</span>
+                <span id="res-hosts" class="font-mono font-medium text-indigo-600 dark:text-indigo-400">254 Host</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Rentang IP:</span>
+                <span id="res-range" class="font-mono font-medium text-slate-800 dark:text-slate-200">.1 — .254</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL 1: TERMINAL DIAGNOSTIK PING -->
+  <div id="ping-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="terminal" class="w-4 h-4 text-indigo-500"></i>
+          <h4 id="ping-modal-title" class="text-sm font-semibold text-slate-800 dark:text-slate-100">Diagnostik ICMP Ping</h4>
+        </div>
+        <button onclick="closePingModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-5">
+        <div id="ping-terminal" class="bg-slate-950 text-emerald-400 font-mono text-xs p-4 rounded-xl h-56 overflow-y-auto space-y-1.5 leading-relaxed">
+          <!-- Output ping dinamis -->
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button onclick="closePingModal()" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">
+            Tutup Terminal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: FORM TAMBAH TIKET GANGGUAN -->
+  <div id="ticket-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Buat Tiket Gangguan Jaringan</h4>
+        <button onclick="closeTicketModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form onsubmit="submitNewTicket(event)" class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="block font-medium text-slate-600 dark:text-slate-300 mb-1">Judul Kendala / Insiden</label>
+          <input type="text" id="ticket-title" required placeholder="Contoh: Packet loss pada Switch Lantai 2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-600 dark:text-slate-300 mb-1">Perangkat Terkait</label>
+            <input type="text" id="ticket-device" required placeholder="SW-DIST-LT2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-600 dark:text-slate-300 mb-1">Prioritas</label>
+            <select id="ticket-priority" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+              <option value="Kritis">Kritis</option>
+              <option value="Sedang" selected>Sedang</option>
+              <option value="Rendah">Rendah</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-600 dark:text-slate-300 mb-1">Deskripsi Singkat</label>
+          <textarea id="ticket-desc" rows="3" required placeholder="Jelaskan gejala gangguan atau indikator lampu perangkat..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeTicketModal()" class="px-4 py-2 rounded-xl font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-xl font-medium bg-indigo-600 text-white hover:bg-indigo-700">Simpan Tiket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFIKASI -->
+  <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2.5 z-50">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 dark:text-emerald-600"></i>
+    <span id="toast-message">Perubahan berhasil disimpan</span>
+  </div>
+
+  <!-- File JavaScript Terpisah -->
+  <script src="script.js"></script>
+</body>
+</html>

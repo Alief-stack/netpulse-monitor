@@ -1,0 +1,72 @@
+/* Konfigurasi Font & Variabel Palet Warna Low-Contrast */
+:root {
+  --bg-canvas: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --border-subtle: #E2E8F0;
+  --text-primary: #1E293B;
+  --text-muted: #64748B;
+  --accent-soft: #EEF2FF;
+  --accent-text: #4F46E5;
+}
+
+html.dark {
+  --bg-canvas: #0F172A;
+  --bg-card: #162032;
+  --border-subtle: #1E293B;
+  --text-primary: #F1F5F9;
+  --text-muted: #94A3B8;
+  --accent-soft: rgba(99, 102, 241, 0.14);
+  --accent-text: #818CF8;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Permukaan Kartu Lembut */
+.card-surface {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Navigasi Sidebar Aktif */
+.nav-item.active {
+  background-color: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* Tombol Filter Grafik Aktif */
+.range-btn.active {
+  background-color: var(--bg-card);
+  color: var(--accent-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Scrollbar Halus */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
+}
